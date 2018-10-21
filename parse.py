@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+
 # Python 2->3 libraries that were renamed.
 try:
     from urllib2 import urlopen
@@ -170,8 +171,11 @@ def generate_test_script(folder, language, num_tests, problem):
             'MY_NAME='+MY_OUTPUT+'\n'
             'rm -R $MY_NAME* &>/dev/null\n').format(problem, param["TEMPLATE"].split('.')[1]))
         test.write(
+            'all=0\n'
+            'passed=0\n'
             'for test_file in $INPUT_NAME*\n'
             'do\n'
+            '    all=$(($all+1))\n'
             '    i=$((${{#INPUT_NAME}}))\n'
             '    test_case=${{test_file:$i}}\n'
             '    if ! {5} {run_cmd} < $INPUT_NAME$test_case > $MY_NAME$test_case; then\n'
@@ -181,22 +185,29 @@ def generate_test_script(folder, language, num_tests, problem):
             '        cat $INPUT_NAME$test_case\n'
             '    else\n'
             '        if diff --brief --ignore-trailing-space $MY_NAME$test_case $OUTPUT_NAME$test_case; then\n'
-            '            echo {1}{3}Sample test \#$test_case: Accepted{2} {6}\n'
+            '            echo -e "\033[42;30mSample test #$test_case: Passed \033[0m"\n'
+	    '		 passed=$(($passed+1))\n'
             '        else\n'
-            '            echo {1}{4}Sample test \#$test_case: Wrong Answer{2} {6}\n'
-            '            echo ========================================\n'
-            '            echo Sample Input \#$test_case\n'
-            '            cat $INPUT_NAME$test_case\n'
-            '            echo ========================================\n'
-            '            echo Sample Output \#$test_case\n'
-            '            cat $OUTPUT_NAME$test_case\n'
-            '            echo ========================================\n'
-            '            echo My Output \#$test_case\n'
-            '            cat $MY_NAME$test_case\n'
-            '            echo ========================================\n'
+            '            echo -e "\033[41;30mSample test #$test_case: wrong answer\033[0m"\n'
             '        fi\n'
+            '        echo ========================================\n'
+            '        echo Sample Input \#$test_case\n'
+            '        cat $INPUT_NAME$test_case\n'
+            '        echo ========================================\n'
+            '        echo Sample Output \#$test_case\n'
+            '        cat $OUTPUT_NAME$test_case\n'
+            '        echo ========================================\n'
+            '        echo My Output \#$test_case\n'
+            '        cat $MY_NAME$test_case\n'
+            '        echo ========================================\n'
+            '        echo -e\n'
             '    fi\n'
             'done\n'
+            'if (($all == $passed)); then\n'
+	    'echo -e "\033[42;30m Successfully Passed All the $all tests \033[0m"\n'
+            'else\n'
+	    'echo -e  "\033[43;34m $passed case passed, $(($all-$passed)) cases failed \033[0m"\n'
+            'fi\n'
             .format(num_tests, BOLD, NORM, GREEN_F, RED_F, TIME_CMD, TIME_AP, run_cmd=param["RUN_CMD"]))
     call(['chmod', '+x', folder + 'test.sh'])
 
